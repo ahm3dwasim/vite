@@ -370,6 +370,8 @@ Limit for chunk size warnings (in kB). It is compared against the uncompressed c
 
 Set to `{}` to enable Rolldown watcher. This is mostly used in cases that involve build-only plugins or integrations processes.
 
+When [`build.write`](#build-write) is `false`, the watcher skips writing the output to disk on each rebuild (as it does for a non-watch build). You can still access the generated output in memory from a plugin's `generateBundle` hook.
+
 ::: warning Using Vite on Windows Subsystem for Linux (WSL) 2
 
 There are cases that file system watching does not work with WSL2.

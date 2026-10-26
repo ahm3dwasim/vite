@@ -895,6 +895,11 @@ async function buildEnvironment(
         ...rolldownOptions,
         watch: {
           ...rolldownOptions.watch,
+          // When `build.write` is `false`, skip writing to disk in watch mode
+          // too, matching the non-watch behavior. This also makes the output
+          // available in the `generateBundle` hook. An explicit `skipWrite` in
+          // `build.watch` still takes precedence.
+          ...(options.write === false ? { skipWrite: true } : {}),
           ...options.watch,
           watcher: convertToWatcherOptions(resolvedChokidarOptions),
         },
