@@ -5,6 +5,20 @@ import type { RolldownWatcher } from 'rolldown'
 import { afterEach, describe, expect, test } from 'vitest'
 import { build } from '../build'
 
+// BUNDLE_END is followed by END once the whole build cycle (including any
+// output handling) has finished, so no timer is needed before asserting.
+function waitForWatcherEnd(watcher: RolldownWatcher): Promise<void> {
+  return new Promise<void>((resolvePromise, rejectPromise) => {
+    watcher.on('event', (event) => {
+      if (event.code === 'END') {
+        resolvePromise()
+      } else if (event.code === 'ERROR') {
+        rejectPromise(event.error)
+      }
+    })
+  })
+}
+
 describe('build watch write:false', () => {
   let tmp: string
   let watcher: RolldownWatcher | undefined
@@ -35,25 +49,7 @@ describe('build watch write:false', () => {
     watcher = output as RolldownWatcher
     expect(watcher).toHaveProperty('on')
 
-    // wait for the first BUNDLE_END
-    await new Promise<void>((resolvePromise, rejectPromise) => {
-      const timeout = setTimeout(
-        () => rejectPromise(new Error('timed out waiting for BUNDLE_END')),
-        15000,
-      )
-      watcher!.on('event', (event) => {
-        if (event.code === 'BUNDLE_END') {
-          clearTimeout(timeout)
-          resolvePromise()
-        } else if (event.code === 'ERROR') {
-          clearTimeout(timeout)
-          rejectPromise(event.error)
-        }
-      })
-    })
-
-    // give it a tick for any write to flush
-    await new Promise((r) => setTimeout(r, 200))
+    await waitForWatcherEnd(watcher)
 
     const distDir = join(tmp, 'dist')
     const wroteToDisk =
@@ -86,23 +82,7 @@ describe('build watch write:false', () => {
     })
 
     watcher = output as RolldownWatcher
-    await new Promise<void>((resolvePromise, rejectPromise) => {
-      const timeout = setTimeout(
-        () => rejectPromise(new Error('timed out waiting for BUNDLE_END')),
-        15000,
-      )
-      watcher!.on('event', (event) => {
-        if (event.code === 'BUNDLE_END') {
-          clearTimeout(timeout)
-          resolvePromise()
-        } else if (event.code === 'ERROR') {
-          clearTimeout(timeout)
-          rejectPromise(event.error)
-        }
-      })
-    })
-
-    await new Promise((r) => setTimeout(r, 200))
+    await waitForWatcherEnd(watcher)
     expect(bundleKeys, 'generateBundle should receive chunks').toBeDefined()
     expect(bundleKeys!.length).toBeGreaterThan(0)
   })
